@@ -100,17 +100,28 @@ FINDFIRSTFILE fpFindFirstFile = NULL;
 // }
 HANDLE WINAPI DetourFindFirstFile(LPCTSTR lpFileName, LPWIN32_FIND_DATAA lpFindFileData)
 {
+    HANDLE fileHandle = NULL;
+
     // we should always patch the find first file calls
     // we can redirect to mods when the files are actually opened
-    LPCTSTR basePath = "..\\";
-    int total_length = strlen(basePath) + strlen(lpFileName) + 1;
-    char* lpInstallFileName = (char*)malloc(total_length);
+    // BUT only if it's a relative path request otherwise we need to just let it through
+    // otherwise save file scans are broken
+    if (StartsWith(lpFileName, ".."))
+    {
+        LPCTSTR basePath = "..\\";
+        int total_length = strlen(basePath) + strlen(lpFileName) + 1;
+        char* lpInstallFileName = (char*)malloc(total_length);
 
-    strcpy(lpInstallFileName, basePath);
-    strcat(lpInstallFileName, lpFileName);
-    HANDLE fileHandle = fpFindFirstFile(lpInstallFileName, lpFindFileData);
+        strcpy(lpInstallFileName, basePath);
+        strcat(lpInstallFileName, lpFileName);
+        fileHandle = fpFindFirstFile(lpInstallFileName, lpFindFileData);
 
-    free(lpInstallFileName);
+        free(lpInstallFileName);
+    }
+    else
+    {
+        fileHandle = fpFindFirstFile(lpFileName, lpFindFileData);
+    }
 
     return fileHandle;
 }
