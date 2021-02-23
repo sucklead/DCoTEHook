@@ -33,3 +33,8 @@ Place the following 3 files from the release into your mods\Engine directory:
  This will start up CoCMainWin32.exe and then use MinHook to hook its file access requests.  
  All file open requests will be checked for a matching file in the mods directory tree first before loading .  
  You should replicate the folder structure in the main directory in the mods directory for any files you want to override.
+
+# Build
+
+If you want to build the source for yourself you can find it at https://github.com/sucklead/DCoTEHook.  
+You can use VS2019 Community Edition to run the CMake build.
