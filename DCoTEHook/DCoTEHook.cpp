@@ -16,6 +16,15 @@ typedef DWORD(WINAPI* fp_NtCreateThreadEx_t)(
     LPVOID Unknown2,
     LPVOID Unknown3);
 
+BOOL DirExists(LPCTSTR lpDirName)
+{
+    DWORD dwAttrib = GetFileAttributes(lpDirName);
+
+    return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
+        (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+
 BOOL FileExists(LPCTSTR lpFileName)
 {
     DWORD dwAttrib = GetFileAttributes(lpFileName);
@@ -228,7 +237,7 @@ int _tmain(int argc, _TCHAR* argv[])
         SetCurrentDirectoryA("S:\\Games\\Call Of Cthulhu DCoTE\\mods\\Engine");
         if (!FileExists("CoCMainWin32.exe"))
         {
-            MessageBox(NULL, "Couldn't locate CoCMainWin32.exe in mod directory!", "DCoTEHook.exe", NULL);
+            MessageBox(NULL, "Couldn't locate CoCMainWin32.exe in mods directory!", "DCoTEHook.exe", NULL);
             return 1;
         }
     }
@@ -292,6 +301,10 @@ int _tmain(int argc, _TCHAR* argv[])
     //const INT_PTR DCoTESettings_start = 2369008;
     //const INT_PTR DCoTESettings_end = 2388295;
 
+    if (!DirExists("..\\Settings"))
+    {
+        CreateDirectoryA("..\\Settings", NULL);
+    }
     
     //unsigned long baseAddress = 0x6425F0;
     ProcessXML(processInformation.hProcess, baseaddress, "..\\Settings\\settings.xml", "DCoTESettings", 2369008, 2388295 + 2);
