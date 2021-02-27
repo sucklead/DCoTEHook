@@ -54,26 +54,36 @@ BOOL WINAPI DetourReadFile(HANDLE hFile, LPVOID lpBuffer, DWORD nNumberOfBytesTo
 CREATEFILE fpCreateFile = NULL;
 HANDLE WINAPI DetourCreateFile(LPCTSTR lpFileName, DWORD dwDesiredAccess, DWORD dwShareMode, LPSECURITY_ATTRIBUTES lpSecurityAttributes, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, HANDLE hTemplateFile)
 {
-    // does file exist in mod directory
-    if (FileExists(lpFileName))
+    // only handle relative paths
+    if (!StartsWith(lpFileName, ".."))
     {
         return fpCreateFile(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
     }
+
+    LPCTSTR basePath = "..\\mods\\Engine\\";
+    int total_length = strlen(basePath) + strlen(lpFileName) + 1;
+    char* lpModFileName = (char*)malloc(total_length);
+
+    strcpy(lpModFileName, basePath);
+    strcat(lpModFileName, lpFileName);
+
+    HANDLE fileHandle = NULL;
+
+    //MessageBox(NULL, lpFileName, "lpFileName", MB_OK | MB_TOPMOST);
+    //MessageBox(NULL, lpModFileName, "lpModFileName", MB_OK | MB_TOPMOST);
+
+    // does file exist in mod directory
+    if (FileExists(lpModFileName))
+    {
+        fileHandle = fpCreateFile(lpModFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
+    }
     else
     {
-        LPCTSTR basePath = "..\\";
-        int total_length = strlen(basePath) + strlen(lpFileName) + 1;
-        char* lpInstallFileName = (char*)malloc(total_length);
-
-        strcpy(lpInstallFileName, basePath);
-        strcat(lpInstallFileName, lpFileName);
-
-        HANDLE fileHandle = fpCreateFile(lpInstallFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
-
-        free(lpInstallFileName);
-
-        return fileHandle;
+        fileHandle = fpCreateFile(lpFileName, dwDesiredAccess, dwShareMode, lpSecurityAttributes, dwCreationDisposition, dwFlagsAndAttributes, hTemplateFile);
     }
+    free(lpModFileName);
+
+    return fileHandle;
 }
 
 FINDFIRSTFILE fpFindFirstFile = NULL;
@@ -134,7 +144,7 @@ extern "C" BOOL APIENTRY DllMain(HINSTANCE hinstDLL, DWORD dwReason, LPVOID lpvR
             MH_Initialize();
             //MH_CreateHook(&ReadFile, &DetourReadFile, reinterpret_cast<void**>((LPVOID)&fpReadFile));
             MH_CreateHook(&CreateFile, &DetourCreateFile, reinterpret_cast<void**>((LPVOID)&fpCreateFile));
-            MH_CreateHook(&FindFirstFile, &DetourFindFirstFile, reinterpret_cast<void**>((LPVOID)&fpFindFirstFile));
+            //MH_CreateHook(&FindFirstFile, &DetourFindFirstFile, reinterpret_cast<void**>((LPVOID)&fpFindFirstFile));
 
             MH_EnableHook(MH_ALL_HOOKS);
         }
