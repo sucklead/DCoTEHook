@@ -37,7 +37,7 @@ BOOL write_xml_to_file(const char* filepath, const char* xmldata, SIZE_T datasiz
     return false;
 }
 
-BOOL read_xml_from_file(const char* filepath, char* xmldata, SIZE_T datasize)
+BOOL read_xml_from_file(const char* filepath, char* xmldata, SIZE_T expectedFilesize)
 {
     FILE* fp = fopen(filepath, "rb");
     if (fp != NULL)
@@ -52,9 +52,9 @@ BOOL read_xml_from_file(const char* filepath, char* xmldata, SIZE_T datasize)
         //sprintf(message, "File is %d bytes", filelength);
         //MessageBox(NULL, message, "read_xml_from_file", MB_OK | MB_TOPMOST);
 
-        if (filelength > datasize)
+        if (filelength > expectedFilesize)
         {
-            sprintf(message, "File size %d is greater than max size of %d for file %s!", filelength, datasize, filepath);
+            sprintf(message, "File size %d is greater than max size of %d for file %s!", filelength, expectedFilesize, filepath);
             MessageBox(NULL, message, "DCOTEHook", MB_OK | MB_TOPMOST);
             return false;
         }
@@ -65,7 +65,7 @@ BOOL read_xml_from_file(const char* filepath, char* xmldata, SIZE_T datasize)
         //sprintf(message, "File is %d bytes, read %d bytes", filelength, bytesread);
        // MessageBox(NULL, message, "read_xml_from_file", MB_OK | MB_TOPMOST);
 
-        //terminate
+        //terminate at read length which may be shorted than expected
         xmldata[bytesread] = 0;
         
         fclose(fp);
@@ -78,16 +78,16 @@ void ImportXML(HANDLE process, const INT_PTR baseaddress, const char* filename, 
 {
     SIZE_T byteswritten = 0;
     INT_PTR writeAddress = baseaddress + startAddress;
-    SIZE_T bytesToRead = endAddress - startAddress;
-    SIZE_T bytesToWrite = endAddress - startAddress + 1;
-    char* xmlbuffer = (char*)malloc(sizeof(char) * (bytesToWrite));
+    //SIZE_T bytesToRead = endAddress - startAddress;
+    SIZE_T xmlSectionBytes = endAddress - startAddress + 1;
+    char* xmlbuffer = (char*)malloc(sizeof(char) * (xmlSectionBytes + 1));
 
     char message[1000];
     //sprintf(message, "xmlbuffer is %d bytes", bytesToWrite + 1);
     //MessageBox(NULL, message, "ImportXML", MB_OK | MB_TOPMOST);
 
 
-    if (read_xml_from_file(filename, xmlbuffer, bytesToRead))
+    if (read_xml_from_file(filename, xmlbuffer, xmlSectionBytes))
     {
         //add string terminator
         //xmlbuffer[bytesToWrite] = 0;
@@ -96,10 +96,10 @@ void ImportXML(HANDLE process, const INT_PTR baseaddress, const char* filename, 
         //WriteProcessMemory(process, pReservedSpace, dllPath, strlen(dllPath), NULL);
 
         DWORD oldprotect;
-        VirtualProtectEx(process, (LPVOID)writeAddress, bytesToWrite, PAGE_EXECUTE_READWRITE, &oldprotect);
+        VirtualProtectEx(process, (LPVOID)writeAddress, xmlSectionBytes, PAGE_EXECUTE_READWRITE, &oldprotect);
 
         //BOOL success = WriteProcessMemory(process, reinterpret_cast<void*>(writeAddress), xmlbuffer, bytesToWrite, &byteswritten);
-        BOOL success = WriteProcessMemory(process, (LPVOID)writeAddress, xmlbuffer, bytesToWrite, &byteswritten);
+        BOOL success = WriteProcessMemory(process, (LPVOID)writeAddress, xmlbuffer, xmlSectionBytes, &byteswritten);
         //BOOL success = WriteProcessMemory(process, pReservedSpace, xmlbuffer, bytesToWrite, &byteswritten);
         if (success)
         {
@@ -116,7 +116,7 @@ void ImportXML(HANDLE process, const INT_PTR baseaddress, const char* filename, 
             MessageBox(NULL, stringvalue, "ImportXML", MB_OK | MB_TOPMOST);
         }
 
-        VirtualProtectEx(process, (LPVOID)writeAddress, bytesToWrite, oldprotect, &oldprotect);
+        VirtualProtectEx(process, (LPVOID)writeAddress, xmlSectionBytes, oldprotect, &oldprotect);
         //VirtualFreeEx(process, pReservedSpace, bytesToWrite, MEM_COMMIT);
     }
     else
@@ -131,14 +131,16 @@ void ExportXML(HANDLE process, const INT_PTR baseaddress, const char* filename, 
     SIZE_T bytesread = 0;
     INT_PTR readAddress = baseaddress + startAddress;
     //SIZE_T bytesToRead = endAddress - startAddress + 4;
-    SIZE_T bytesToRead = endAddress - startAddress + 1;
+    SIZE_T xmlSectionBytes = (endAddress - startAddress) + 1;
     char message[1000];
 
     //sprintf(message, "Setting buffer size");
     //MessageBox(NULL, message, "HOOK main", MB_OK | MB_TOPMOST);
 
     //char* xmlbuffer = new char[bytesToRead];
-    char* xmlbuffer = (char*)malloc(sizeof(char) * (bytesToRead + 1));
+
+    //allocate enough for section bytes plus terminator
+    char* xmlbuffer = (char*)malloc(sizeof(char) * (xmlSectionBytes + 1));
     //memset(xmlbuffer, 0, bytesToRead * sizeof(char));
 
     //sprintf(message, "ReadProcessMemory");
@@ -146,11 +148,11 @@ void ExportXML(HANDLE process, const INT_PTR baseaddress, const char* filename, 
 
 
     //read the process memory and look for the <DCoTESettings> tag
-    BOOL success = ReadProcessMemory(process, (LPVOID)(readAddress), xmlbuffer, bytesToRead, &bytesread);
+    BOOL success = ReadProcessMemory(process, (LPVOID)(readAddress), xmlbuffer, xmlSectionBytes, &bytesread);
     //WriteProcessMemory(processInformation.hProcess, 
     if (success)
     {
-        //add string terminator
+        //add string terminator after section bytes
         xmlbuffer[bytesread] = 0;
         //sprintf(message, "[%s] Success asked for %d bytes and read %d bytes, string length is %d", filename, bytesToRead, bytesread, strlen(xmlbuffer));
         //MessageBox(NULL, "Success :)", "HOOK main", MB_OK | MB_TOPMOST);
@@ -171,8 +173,7 @@ void ExportXML(HANDLE process, const INT_PTR baseaddress, const char* filename, 
 
         //MessageBox(NULL, lpWriteFilename, "File name", MB_OK | MB_TOPMOST);
 
-        write_xml_to_file(filename, xmlbuffer, bytesToRead);
-
+        write_xml_to_file(filename, xmlbuffer, xmlSectionBytes);
 
         //free(lpWriteFilename);
 
