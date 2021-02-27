@@ -345,7 +345,7 @@ int _tmain(int argc, _TCHAR* argv[])
     ProcessXML(processInformation.hProcess, baseaddress, "..\\Settings\\AICharacterTypeSettings.xml", "AI_Settings", 2620320, 2661040);
     //ProcessXML(processInformation.hProcess, baseaddress, "..\\Settings\\AICharacterTypeSettings2.xml", "AI_Settings", 2620320, 2661040);
     //ExportXML(processInformation.hProcess, baseaddress, "..\\Settings\\AICharacterTypeSettings2.xml", "AI_Settings", 2620320, 2661040);
-    ExportXML(processInformation.hProcess, baseaddress, "..\\Settings\\settings2.xml", "DCoTESettings", 2369008, 2388295 + 2);
+    //ExportXML(processInformation.hProcess, baseaddress, "..\\Settings\\settings2.xml", "DCoTESettings", 2369008, 2388295 + 2);
 
     //MessageBox(NULL, "Here!", "DCoTEHook.exe", NULL);
 
