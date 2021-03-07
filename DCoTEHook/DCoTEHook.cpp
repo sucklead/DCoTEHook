@@ -197,10 +197,13 @@ BOOL InjectHookDll(HANDLE process, const char* dllPath)
     return true;
 }
 
+VOID CALLBACK TimerCallback(HWND hwnd, UINT uMsg, UINT_PTR idEvent, DWORD dwTime)
+{
+    PostQuitMessage(0);
+}
 
 int _tmain(int argc, _TCHAR* argv[])
 {
-
     STARTUPINFOA startupInfo;
     PROCESS_INFORMATION processInformation;
 
@@ -210,6 +213,20 @@ int _tmain(int argc, _TCHAR* argv[])
 
     char lpModWorkingDir[MAX_PATH];
     char lpBaseWorkingDir[MAX_PATH];
+
+
+    int timeout_seconds = 3;
+    SetTimer(NULL, 1, timeout_seconds * 1000, (TIMERPROC)TimerCallback);
+
+    int result = MessageBox(0, "Red Hooking CoCMainWin32.exe...\n(Hit cancel to abort)", "DCoTEHook Version 0.4 by Sucklead", MB_TOPMOST | MB_OKCANCEL);
+
+    KillTimer(NULL, 1);
+
+    // did user hit cancel?
+    if (result == 2)
+    {
+        return 7;
+    }
 
     GetCurrentDirectory(MAX_PATH, lpModWorkingDir);
 
