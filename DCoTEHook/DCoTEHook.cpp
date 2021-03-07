@@ -210,7 +210,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
     char lpModWorkingDir[MAX_PATH];
     char lpBaseWorkingDir[MAX_PATH];
-    char lpCurrentWorkingDir[MAX_PATH];
+
     GetCurrentDirectory(MAX_PATH, lpModWorkingDir);
 
     //sprintf(message, "Initial working dir is [%s]", lpModWorkingDir);
@@ -224,9 +224,14 @@ int _tmain(int argc, _TCHAR* argv[])
     //MessageBox(NULL, message, "DCoTEHook.exe", MB_OK | MB_TOPMOST);
 
     // are we debugging?
-    if (!DirExists(lpBaseWorkingDir))
+    //if (IsDebuggerPresent)
+    //{
+    //    strcpy(lpBaseWorkingDir, "S:\\Games\\Call Of Cthulhu DCoTE\\Engine");
+    //}
+    // are we debugging?
+    if (IsDebuggerPresent)
     {
-        strcpy(lpBaseWorkingDir, "S:\\Games\\Call Of Cthulhu DCoTE\\Engine");
+        strcpy(lpBaseWorkingDir, "C:\\Steam\\steamapps\\common\\Call of Cthulhu\\Engine");
     }
 
     // change to base directory
@@ -246,9 +251,22 @@ int _tmain(int argc, _TCHAR* argv[])
         MessageBox(NULL, "Couldn't locate CoCMainWin32.exe in mods directory!", "DCoTEHook.exe", NULL);
         return 1;
     }
-    CreateProcessA(0, "CoCMainWin32.exe", 0, 0, 1, CREATE_SUSPENDED | CREATE_NEW_CONSOLE, 0, 0, &startupInfo, &processInformation);
 
+    // for steam we need to set SteamAppId=22340
+    if (strstr(lpBaseWorkingDir, "steamapps") != NULL)
+    {
+        int success = SetEnvironmentVariable("SteamAppId", "22340");
+        if (success == 0)
+        {
+            DWORD last_error = GetLastError();
+            sprintf(message, "Couldn't set SteamAppId environmental variable [%d]!", last_error);
+            MessageBox(NULL, message, "DCoTEHook.exe", MB_OK | MB_TOPMOST);
+            return 6;
+        }
+    }
+    CreateProcessA(0, "CoCMainWin32.exe", 0, 0, 1, CREATE_SUSPENDED | CREATE_NEW_CONSOLE, NULL, 0, &startupInfo, &processInformation);
 
+    // does the settings dir exist?
     if (!DirExists("..\\mods\\Settings"))
     {
         CreateDirectoryA("..\\mods\\Settings", NULL);
