@@ -241,15 +241,15 @@ int _tmain(int argc, _TCHAR* argv[])
     //MessageBox(NULL, message, "DCoTEHook.exe", MB_OK | MB_TOPMOST);
 
     // are we debugging?
-    //if (IsDebuggerPresent)
-    //{
-    //    strcpy(lpBaseWorkingDir, "S:\\Games\\Call Of Cthulhu DCoTE\\Engine");
-    //}
-    // are we debugging?
     if (IsDebuggerPresent)
     {
-        strcpy(lpBaseWorkingDir, "C:\\Steam\\steamapps\\common\\Call of Cthulhu\\Engine");
+        strcpy(lpBaseWorkingDir, "S:\\Games\\Call Of Cthulhu DCoTE\\Engine");
     }
+    // are we debugging?
+    //if (IsDebuggerPresent)
+    //{
+    //    strcpy(lpBaseWorkingDir, "C:\\Steam\\steamapps\\common\\Call of Cthulhu\\Engine");
+    //}
 
     // change to base directory
     if (!SetCurrentDirectoryA(lpBaseWorkingDir))
@@ -347,6 +347,12 @@ int _tmain(int argc, _TCHAR* argv[])
     if (!InjectHookDll(processInformation.hProcess, "..\\mods\\Engine\\MinHook.x86.dll"))
     {
         MessageBox(NULL, "Failed to load MinHook.x86.dll library!", "DCoTEHook.exe", MB_OK | MB_TOPMOST);
+        TerminateProcess(processInformation.hProcess, 0);
+        return 4;
+    }
+    if (!InjectHookDll(processInformation.hProcess, "..\\mods\\Engine\\d3d9.dll"))
+    {
+        MessageBox(NULL, "Failed to load d3d9.dll library!", "DCoTEHook.exe", MB_OK | MB_TOPMOST);
         TerminateProcess(processInformation.hProcess, 0);
         return 4;
     }
